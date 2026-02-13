@@ -18,6 +18,7 @@ export function useSettings() {
     fontSize: (settingsRecords?.find(s => s.key === 'fontSize')?.value as number) ?? DEFAULT_SETTINGS.fontSize,
     darkMode: (settingsRecords?.find(s => s.key === 'darkMode')?.value as boolean) ?? DEFAULT_SETTINGS.darkMode,
     speechRate: (settingsRecords?.find(s => s.key === 'speechRate')?.value as number) ?? DEFAULT_SETTINGS.speechRate,
+    uiFontSize: (settingsRecords?.find(s => s.key === 'uiFontSize')?.value as number) ?? DEFAULT_SETTINGS.uiFontSize,
     lastRead: (settingsRecords?.find(s => s.key === 'lastRead')?.value as AppSettings['lastRead']) ?? DEFAULT_SETTINGS.lastRead,
   };
 

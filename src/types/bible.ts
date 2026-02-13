@@ -92,6 +92,7 @@ export interface AppSettings {
   fontSize: number;
   darkMode: boolean;
   speechRate: number;
+  uiFontSize: number;
   lastRead: {
     book: string;
     chapter: number;

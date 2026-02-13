@@ -211,10 +211,10 @@ export default function SettingsPage() {
             화면 설정
           </h2>
 
-          {/* Font size */}
+          {/* Bible verse font size */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark">글자 크기</label>
+              <label className="text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark">성경 글자 크기</label>
               <span className="text-sm text-bible-accent font-mono">{settings.fontSize}px</span>
             </div>
             <input
@@ -233,6 +233,31 @@ export default function SettingsPage() {
             >
               하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니 이는 그를 믿는 자마다 멸망하지 않고 영생을 얻게 하려 하심이라
             </p>
+          </div>
+
+          {/* UI menu font size */}
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark">메뉴 글자 크기</label>
+              <span className="text-sm text-bible-accent font-mono">{settings.uiFontSize}px</span>
+            </div>
+            <input
+              type="range"
+              min={12}
+              max={20}
+              step={1}
+              value={settings.uiFontSize}
+              onChange={(e) => updateSetting('uiFontSize', Number(e.target.value))}
+              className="w-full"
+              style={{ accentColor: '#C4956A' }}
+            />
+            <div
+              className="mt-2 p-3 bg-bible-surface dark:bg-bible-surface-dark rounded-xl border border-bible-border/30 dark:border-bible-border-dark/30 space-y-1"
+              style={{ fontSize: `${settings.uiFontSize}px` }}
+            >
+              <p className="font-sans text-bible-text dark:text-bible-text-dark">메뉴 미리보기</p>
+              <p className="font-sans text-bible-text-secondary dark:text-bible-text-secondary-dark">설정, 검색, 노트 등</p>
+            </div>
           </div>
 
           {/* Dark mode */}

@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 18,
   darkMode: false,
   speechRate: 1.0,
+  uiFontSize: 14,
   lastRead: null,
 };
 
@@ -24,8 +25,9 @@ export async function getAllSettings(): Promise<AppSettings> {
   const fontSize = await getSetting('fontSize', DEFAULT_SETTINGS.fontSize);
   const darkMode = await getSetting('darkMode', DEFAULT_SETTINGS.darkMode);
   const speechRate = await getSetting('speechRate', DEFAULT_SETTINGS.speechRate);
+  const uiFontSize = await getSetting('uiFontSize', DEFAULT_SETTINGS.uiFontSize);
   const lastRead = await getSetting('lastRead', DEFAULT_SETTINGS.lastRead);
-  return { currentVersion, fontSize, darkMode, speechRate, lastRead };
+  return { currentVersion, fontSize, darkMode, speechRate, uiFontSize, lastRead };
 }
 
 export { DEFAULT_SETTINGS };

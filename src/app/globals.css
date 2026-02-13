@@ -8,6 +8,7 @@
   }
 
   html {
+    --ui-font-size: 14px;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -43,6 +44,11 @@
 }
 
 @layer components {
+  /* UI font size (menus, navigation, buttons, labels) */
+  .font-sans {
+    font-size: var(--ui-font-size, 14px);
+  }
+
   /* Touch target minimum size */
   .touch-target {
     min-width: 44px;
