@@ -22,6 +22,13 @@ export class MyBibleDB extends Dexie {
       readingProgress: 'id, book, chapter, completedAt',
       settings: 'key'
     });
+    this.version(2).stores({
+      notes: 'id, type, [book+chapter], [book+chapter+verse], date, createdAt',
+      highlights: 'id, [book+chapter], [book+chapter+verse], version, createdAt',
+      bookmarks: 'id, [book+chapter], [book+chapter+verse], createdAt',
+      readingProgress: 'id, [book+chapter], completedAt',
+      settings: 'key'
+    });
   }
 }
 

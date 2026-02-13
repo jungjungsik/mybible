@@ -7,6 +7,18 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   darkMode: 'class',
+  safelist: [
+    'bg-bible-highlight-yellow',
+    'bg-bible-highlight-green',
+    'bg-bible-highlight-blue',
+    'bg-bible-highlight-pink',
+    'bg-bible-highlight-purple',
+    'dark:bg-bible-highlight-yellow-dark',
+    'dark:bg-bible-highlight-green-dark',
+    'dark:bg-bible-highlight-blue-dark',
+    'dark:bg-bible-highlight-pink-dark',
+    'dark:bg-bible-highlight-purple-dark',
+  ],
   theme: {
     extend: {
       fontFamily: {
