@@ -11,6 +11,7 @@ import { BibleChapter, BibleVerse, SourceApi } from '@/types/bible';
 import { getVersionById } from '@/lib/constants/versions';
 import { fetchWldehChapter } from '@/lib/api/providers/wldeh';
 import { fetchHelloaoChapter } from '@/lib/api/providers/helloao';
+import { db } from '@/lib/db/index';
 
 // ── In-memory LRU cache ──
 
@@ -98,6 +99,7 @@ export async function fetchChapter(
       signal
     );
     addToCache(key, data);
+    persistVerses(data);
     return data;
   } catch (primaryError) {
     // If aborted, don't retry
@@ -139,8 +141,27 @@ export async function fetchChapter(
 }
 
 /**
- * Search through cached chapters for verses matching the query.
- * This is a client-side search limited to already-loaded chapters.
+ * Persist fetched chapter verses to IndexedDB for search.
+ */
+async function persistVerses(chapter: BibleChapter): Promise<void> {
+  try {
+    const entries = chapter.verses.map(v => ({
+      id: `${v.version}:${v.book}:${v.chapter}:${v.verse}`,
+      version: v.version,
+      book: v.book,
+      chapter: v.chapter,
+      verse: v.verse,
+      text: v.text,
+    }));
+    await db.verseCache.bulkPut(entries);
+  } catch {
+    // Silently fail — search still works with in-memory cache
+  }
+}
+
+/**
+ * Search through IndexedDB-persisted verses matching the query.
+ * Falls back to in-memory cache if IndexedDB is empty.
  * Returns up to 50 results.
  */
 export async function searchBible(
@@ -149,8 +170,37 @@ export async function searchBible(
 ): Promise<BibleVerse[]> {
   if (!query || query.length < 2) return [];
 
-  const results: BibleVerse[] = [];
   const lowerQuery = query.toLowerCase();
+
+  // Search persistent IndexedDB cache
+  try {
+    const allVerses = await db.verseCache
+      .where('version')
+      .equals(versionId)
+      .toArray();
+
+    if (allVerses.length > 0) {
+      const results: BibleVerse[] = [];
+      for (const v of allVerses) {
+        if (v.text.toLowerCase().includes(lowerQuery)) {
+          results.push({
+            book: v.book,
+            chapter: v.chapter,
+            verse: v.verse,
+            text: v.text,
+            version: v.version,
+          });
+          if (results.length >= 50) break;
+        }
+      }
+      return results;
+    }
+  } catch {
+    // Fall through to in-memory cache
+  }
+
+  // Fallback: in-memory cache
+  const results: BibleVerse[] = [];
   const prefix = versionId + ':';
 
   cache.forEach((chapter, key) => {

@@ -57,6 +57,7 @@ export default function ReadPage({ params }: ReadPageProps) {
   const [selectedVerse, setSelectedVerse] = useState<BibleVerse | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showMemoEditor, setShowMemoEditor] = useState(false);
+  const [memoVerse, setMemoVerse] = useState<BibleVerse | null>(null);
 
   // Save lastRead and mark chapter read when data loads
   useEffect(() => {
@@ -103,6 +104,7 @@ export default function ReadPage({ params }: ReadPageProps) {
 
   const handleMemo = useCallback(() => {
     if (!selectedVerse) return;
+    setMemoVerse(selectedVerse);
     setShowActionMenu(false);
     setShowMemoEditor(true);
   }, [selectedVerse]);
@@ -223,14 +225,14 @@ export default function ReadPage({ params }: ReadPageProps) {
       />
 
       {/* Verse note editor */}
-      {selectedVerse && (
+      {memoVerse && (
         <VerseNoteEditor
           isOpen={showMemoEditor}
-          onClose={() => setShowMemoEditor(false)}
-          book={selectedVerse.book}
-          chapter={selectedVerse.chapter}
-          verse={selectedVerse.verse}
-          verseText={selectedVerse.text}
+          onClose={() => { setShowMemoEditor(false); setMemoVerse(null); }}
+          book={memoVerse.book}
+          chapter={memoVerse.chapter}
+          verse={memoVerse.verse}
+          verseText={memoVerse.text}
         />
       )}
     </>
