@@ -29,6 +29,15 @@ export function useBookProgress(book: string) {
   return progress;
 }
 
+export function useRecentReading(limit: number = 5) {
+  const recent = useLiveQuery(
+    () => db.readingProgress.orderBy('completedAt').reverse().limit(limit).toArray(),
+    [limit],
+    []
+  );
+  return recent;
+}
+
 export function useMarkChapterRead() {
   const markChapterRead = useCallback(async (book: string, chapter: number) => {
     await dbMarkChapterRead(book, chapter);

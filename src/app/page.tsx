@@ -4,10 +4,11 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { QuickJump } from '@/components/bible/QuickJump';
 import { useSettings } from '@/hooks/useSettings';
+import { useRecentReading } from '@/hooks/useReadingProgress';
 import { getDailyVerse } from '@/lib/utils/dailyVerse';
 import { formatReference } from '@/lib/utils/formatReference';
 import { getBookById } from '@/lib/constants/books';
-import { BookOpen, PenSquare, ChevronRight } from 'lucide-react';
+import { BookOpen, PenSquare, ChevronRight, Clock } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function Home() {
   const dailyRef = formatReference(dailyVerse.book, dailyVerse.chapter, dailyVerse.verse);
 
   const lastReadBook = settings.lastRead ? getBookById(settings.lastRead.book) : null;
+  const recentReading = useRecentReading(5);
 
   return (
     <>
@@ -75,6 +77,34 @@ export default function Home() {
                 성경 읽기 시작
               </button>
             )}
+          </section>
+        )}
+
+        {/* ── Recently Read ── */}
+        {recentReading.length > 0 && (
+          <section className="card p-4">
+            <p className="text-xs font-display text-bible-text-secondary dark:text-bible-text-secondary-dark uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <Clock size={12} />
+              최근 읽은 말씀
+            </p>
+            <div className="space-y-1.5">
+              {recentReading.map((item) => {
+                const recentBook = getBookById(item.book);
+                if (!recentBook) return null;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => router.push(`/read/${item.book}/${item.chapter}`)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-bible-surface dark:hover:bg-bible-surface-dark transition-colors"
+                  >
+                    <span className="text-sm font-sans text-bible-text dark:text-bible-text-dark">
+                      {recentBook.name} {item.chapter}장
+                    </span>
+                    <ChevronRight size={14} className="text-bible-text-secondary/40 dark:text-bible-text-secondary-dark/40" />
+                  </button>
+                );
+              })}
+            </div>
           </section>
         )}
 
