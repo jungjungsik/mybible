@@ -1,6 +1,20 @@
-# iLoveBible - Project Guide
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Build & Development Commands
+
+```bash
+npm run dev          # Start dev server (http://localhost:3000)
+npm run build        # Production build
+npm run lint         # ESLint
+npx tsc --noEmit     # Type check (no test framework configured)
+```
+
+Path alias: `@/*` maps to `./src/*`
 
 ## Overview
+
 Korean-first Bible PWA with offline support. No backend — all data stored in IndexedDB via Dexie.js.
 
 **Stack**: Next.js 14, TypeScript, Tailwind CSS, Dexie.js (IndexedDB), PWA
@@ -64,6 +78,14 @@ src/
 └── types/bible.ts          # All TypeScript interfaces
 ```
 
+### Data Flow
+
+Bible reading: `useBible` hook → `bibleApi.ts` (LRU cache check → IndexedDB cache check → API fetch) → `persistVerses()` saves to IndexedDB → component renders
+
+Search: `useSearch` hook (300ms debounce) → `searchBible()` scans IndexedDB `verseCache` → scores/ranks results → returns paginated `SearchResponse`
+
+Settings: `useSettings` hook → `useLiveQuery()` from Dexie watches IndexedDB → reactive updates across all components
+
 ## Design System
 
 ### Colors (Tailwind `bible-*` namespace)
@@ -78,7 +100,7 @@ src/
 - `font-sans` (DM Sans) — UI labels, buttons
 - `font-display` (Playfair Display) — headings, titles
 
-### CSS Classes
+### CSS Classes (defined in globals.css)
 - `.card` — standard card with warm shadow
 - `.btn-primary` — gold accent button
 - `.btn-secondary` — border button
