@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -13,6 +13,12 @@ import { BIBLE_BOOKS } from '@/lib/constants/books';
 import { db } from '@/lib/db/index';
 import { ExportData } from '@/types/bible';
 import {
+  prefetchAllChapters,
+  getCachedChapterCount,
+  TOTAL_CHAPTERS,
+  PrefetchProgress,
+} from '@/lib/utils/prefetchBible';
+import {
   ChevronDown,
   ChevronRight,
   Download,
@@ -21,6 +27,8 @@ import {
   BookOpen,
   Smartphone,
   BarChart3,
+  CloudDownload,
+  X,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -32,6 +40,33 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  // ── Bible download state ──
+  const [downloadProgress, setDownloadProgress] = useState<PrefetchProgress | null>(null);
+  const [cachedCount, setCachedCount] = useState<number | null>(null);
+  const abortRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!isLoading) {
+      getCachedChapterCount(settings.currentVersion).then(setCachedCount);
+    }
+  }, [settings.currentVersion, isLoading]);
+
+  const handleStartDownload = useCallback(() => {
+    const { abort } = prefetchAllChapters(settings.currentVersion, (progress) => {
+      setDownloadProgress(progress);
+      if (progress.status === 'done') {
+        setCachedCount(progress.total);
+        abortRef.current = null;
+      }
+    });
+    abortRef.current = abort;
+  }, [settings.currentVersion]);
+
+  const handleCancelDownload = useCallback(() => {
+    abortRef.current?.();
+    abortRef.current = null;
+  }, []);
 
   const koreanVersions = getKoreanVersions();
   const englishVersions = getEnglishVersions();
@@ -362,7 +397,94 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ── 4. Reading Statistics ── */}
+        {/* ── 4. Bible Download ── */}
+        <section className="card rounded-2xl p-4">
+          <h2 className="text-sm font-sans font-medium text-bible-text-secondary dark:text-bible-text-secondary-dark uppercase tracking-wider mb-3 flex items-center gap-2">
+            <CloudDownload size={16} />
+            전체 성경 다운로드
+          </h2>
+
+          <p className="text-xs font-sans text-bible-text-secondary dark:text-bible-text-secondary-dark mb-3 leading-relaxed">
+            전체 성경을 미리 다운로드하면 모든 구절을 검색할 수 있습니다.
+            {cachedCount !== null && (
+              <span className="block mt-1 text-bible-accent font-medium">
+                현재 {cachedCount.toLocaleString()} / {TOTAL_CHAPTERS.toLocaleString()} 장 저장됨
+              </span>
+            )}
+          </p>
+
+          {/* Progress bar during download */}
+          {downloadProgress && downloadProgress.status === 'downloading' && (
+            <div className="mb-3">
+              <div className="flex justify-between text-xs font-sans mb-1">
+                <span className="text-bible-text-secondary dark:text-bible-text-secondary-dark">
+                  {downloadProgress.currentBook}
+                </span>
+                <span className="font-mono text-bible-accent">
+                  {downloadProgress.current.toLocaleString()} / {downloadProgress.total.toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-bible-border/50 dark:bg-bible-border-dark/50 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-bible-accent rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round((downloadProgress.current / downloadProgress.total) * 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] font-sans text-bible-text-secondary/60 dark:text-bible-text-secondary-dark/60 mt-1">
+                {Math.round((downloadProgress.current / downloadProgress.total) * 100)}% 완료
+              </p>
+            </div>
+          )}
+
+          {/* Status messages */}
+          {downloadProgress?.status === 'done' && (
+            <p className="text-xs font-sans text-green-600 dark:text-green-400 mb-3 font-medium">
+              다운로드 완료! 이제 전체 성경을 검색할 수 있습니다.
+            </p>
+          )}
+          {downloadProgress?.status === 'error' && (
+            <p className="text-xs font-sans text-red-500 dark:text-red-400 mb-3">
+              오류: {downloadProgress.error}
+            </p>
+          )}
+          {downloadProgress?.status === 'cancelled' && (
+            <p className="text-xs font-sans text-bible-text-secondary dark:text-bible-text-secondary-dark mb-3">
+              다운로드가 취소되었습니다. ({downloadProgress.current.toLocaleString()}장 저장됨)
+            </p>
+          )}
+
+          {/* Action buttons */}
+          {(!downloadProgress || downloadProgress.status !== 'downloading') ? (
+            <button
+              onClick={handleStartDownload}
+              disabled={cachedCount === TOTAL_CHAPTERS}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-sans font-medium transition-colors ${
+                cachedCount === TOTAL_CHAPTERS
+                  ? 'border border-green-200 dark:border-green-900 text-green-600 dark:text-green-400 cursor-default'
+                  : 'btn-primary justify-center'
+              }`}
+            >
+              <CloudDownload size={18} />
+              <span>
+                {cachedCount === TOTAL_CHAPTERS
+                  ? '전체 성경 다운로드 완료'
+                  : downloadProgress?.status === 'cancelled'
+                    ? '이어서 다운로드'
+                    : '전체 성경 다운로드 시작'}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={handleCancelDownload}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-200 dark:border-red-900 text-red-500 dark:text-red-400 text-sm font-sans font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors justify-center"
+            >
+              <X size={18} />
+              <span>다운로드 취소</span>
+            </button>
+          )}
+        </section>
+
+        {/* ── 5. Reading Statistics ── */}
         <section className="card rounded-2xl p-4">
           <h2 className="text-sm font-sans font-medium text-bible-text-secondary dark:text-bible-text-secondary-dark uppercase tracking-wider mb-3 flex items-center gap-2">
             <BookOpen size={16} />
