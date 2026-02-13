@@ -1,7 +1,7 @@
 {
-  "name": "나의 성경",
-  "short_name": "성경",
-  "description": "나만의 성경 앱",
+  "name": "iLoveBible",
+  "short_name": "iLoveBible",
+  "description": "나의 사랑하는 성경",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

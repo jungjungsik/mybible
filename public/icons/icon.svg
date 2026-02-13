@@ -12,6 +12,11 @@
       <stop offset="50%" stop-color="#C4956A"/>
       <stop offset="100%" stop-color="#A07A52"/>
     </linearGradient>
+    <!-- Heart gradient (accent colors) -->
+    <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C4956A"/>
+      <stop offset="100%" stop-color="#8B7355"/>
+    </linearGradient>
     <!-- Light gold for highlights -->
     <linearGradient id="lightGold" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#E8C9A0"/>
@@ -22,6 +27,14 @@
       <stop offset="0%" stop-color="#C4956A" stop-opacity="0.15"/>
       <stop offset="100%" stop-color="#C4956A" stop-opacity="0"/>
     </radialGradient>
+    <!-- Soft glow filter for heart -->
+    <filter id="heartGlow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
   <!-- Background rounded square -->
@@ -53,18 +66,22 @@
   <line x1="272" y1="251" x2="366" y2="241" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.15"/>
   <line x1="268" y1="274" x2="362" y2="264" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.12"/>
 
-  <!-- Elegant cross rising from book — vertical -->
-  <line x1="256" y1="108" x2="256" y2="172" stroke="url(#lightGold)" stroke-width="10" stroke-linecap="round"/>
+  <!-- Heart rising from book (replacing cross) -->
+  <g transform="translate(256, 116)" filter="url(#heartGlow)">
+    <path d="M 0 24 C -8 10, -24 -2, -40 -8 C -54 -12, -64 -4, -64 12 C -64 28, -52 44, -28 64 L 0 86 L 28 64 C 52 44, 64 28, 64 12 C 64 -4, 54 -12, 40 -8 C 24 -2, 8 10, 0 24 Z"
+          fill="url(#heartGrad)"
+          stroke="url(#lightGold)"
+          stroke-width="3"/>
+    <!-- Heart highlight for dimension -->
+    <ellipse cx="-18" cy="8" rx="14" ry="18" fill="#E8C9A0" opacity="0.25"/>
+  </g>
 
-  <!-- Cross horizontal bar -->
-  <line x1="224" y1="136" x2="288" y2="136" stroke="url(#lightGold)" stroke-width="10" stroke-linecap="round"/>
-
-  <!-- Small radiant lines from cross (subtle light rays) -->
-  <line x1="256" y1="100" x2="256" y2="88" stroke="#E8C9A0" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
-  <line x1="234" y1="114" x2="226" y2="106" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
-  <line x1="278" y1="114" x2="286" y2="106" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
-  <line x1="214" y1="136" x2="204" y2="136" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/>
-  <line x1="298" y1="136" x2="308" y2="136" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/>
+  <!-- Small radiant lines from heart (subtle light rays) -->
+  <line x1="256" y1="96" x2="256" y2="84" stroke="#E8C9A0" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <line x1="234" y1="106" x2="226" y2="98" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+  <line x1="278" y1="106" x2="286" y2="98" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+  <line x1="214" y1="124" x2="204" y2="124" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/>
+  <line x1="298" y1="124" x2="308" y2="124" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/>
 
   <!-- Decorative corner accents (art deco touch) -->
   <!-- Top-left -->
@@ -76,8 +93,13 @@
   <!-- Bottom-right -->
   <path d="M440,440 L440,412 M440,440 L412,440" stroke="#C4956A" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
 
-  <!-- App name at bottom -->
-  <text x="256" y="400" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" font-weight="600" fill="#C4956A" letter-spacing="8" opacity="0.7">
+  <!-- App name "BIBLE" in bold -->
+  <text x="256" y="400" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" font-weight="bold" fill="#C4956A" letter-spacing="8" opacity="0.85">
     BIBLE
+  </text>
+
+  <!-- Subtitle "나의 사랑하는 성경" -->
+  <text x="256" y="435" text-anchor="middle" font-family="'Noto Sans KR', 'Malgun Gothic', sans-serif" font-size="18" fill="#C4956A" letter-spacing="1" opacity="0.7">
+    나의 사랑하는 성경
   </text>
 </svg>

@@ -389,6 +389,10 @@ export default function SettingsPage() {
             )}
 
             <div className="flex justify-between">
+              <span>앱 이름</span>
+              <span className="font-medium text-bible-accent">iLoveBible</span>
+            </div>
+            <div className="flex justify-between">
               <span>버전</span>
               <span className="font-mono">1.0.0</span>
             </div>

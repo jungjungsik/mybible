@@ -26,8 +26,8 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "나의 성경",
-  description: "나만의 성경 앱",
+  title: "iLoveBible",
+  description: "나의 사랑하는 성경",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/favicon.svg",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "나의 성경",
+    title: "iLoveBible",
   },
 };
 

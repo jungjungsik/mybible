@@ -1,4 +1,4 @@
-# My Bible App - Implementation Complete
+# iLoveBible - Implementation Complete
 
 ## Project Overview
 

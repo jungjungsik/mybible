@@ -22,7 +22,7 @@ export default function Home() {
 
   return (
     <>
-      <Header title="나의 성경" />
+      <Header title="iLoveBible" />
       <main className="p-4 pb-24 space-y-5 max-w-2xl mx-auto">
 
         {/* ── Ornament Divider ── */}

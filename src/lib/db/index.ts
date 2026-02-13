@@ -15,7 +15,7 @@ export interface CachedVerse {
   text: string;
 }
 
-export class MyBibleDB extends Dexie {
+export class ILoveBibleDB extends Dexie {
   notes!: Table<Note, string>;
   highlights!: Table<Highlight, string>;
   bookmarks!: Table<Bookmark, string>;
@@ -50,4 +50,4 @@ export class MyBibleDB extends Dexie {
   }
 }
 
-export const db = new MyBibleDB();
+export const db = new ILoveBibleDB();

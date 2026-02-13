@@ -1,4 +1,4 @@
-# Quick Start Guide - 나의 성경 (My Bible)
+# Quick Start Guide - iLoveBible (나의 사랑하는 성경)
 
 ## Prerequisites
 
