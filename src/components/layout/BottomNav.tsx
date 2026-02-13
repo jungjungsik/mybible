@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Search, PenSquare, Settings } from 'lucide-react';
+import { Home, BookOpen, Search, PenSquare, Settings } from 'lucide-react';
 import clsx from 'clsx';
 
 const tabs = [
+  { href: '/', icon: Home, label: '홈' },
   { href: '/books', icon: BookOpen, label: '성경' },
   { href: '/search', icon: Search, label: '검색' },
   { href: '/notes', icon: PenSquare, label: '노트' },
@@ -19,7 +20,7 @@ export function BottomNav() {
     <nav className="glass fixed bottom-0 left-0 right-0 z-50 border-t border-bible-border/60 dark:border-bible-border-dark/60 safe-area-bottom">
       <div className="max-w-3xl mx-auto flex items-center justify-around h-16">
         {tabs.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/') ||
+          const isActive = (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')) ||
             (href === '/books' && pathname.startsWith('/read'));
 
           return (
