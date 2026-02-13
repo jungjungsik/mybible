@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(npx create-next-app@14:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "mcp__plugin_oh-my-claudecode_omc-tools__lsp_diagnostics",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:bible.helloao.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "mcp__plugin_oh-my-claudecode_omc-tools__lsp_diagnostics_directory",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
