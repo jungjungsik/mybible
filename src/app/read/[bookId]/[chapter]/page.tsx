@@ -49,7 +49,7 @@ export default function ReadPage({ params }: ReadPageProps) {
 
   // TTS
   const ttsLang = settings.currentVersion === 'krv' ? 'ko' : 'en';
-  const { isPlaying: isTTSPlaying, currentVerseIndex: ttsVerseIndex, play: ttsPlay, pause: ttsPause, resume: ttsResume, stop: ttsStop, isSupported: ttsSupported } = useTTS({ lang: ttsLang });
+  const { isPlaying: isTTSPlaying, currentVerseIndex: ttsVerseIndex, play: ttsPlay, pause: ttsPause, resume: ttsResume, stop: ttsStop, isSupported: ttsSupported } = useTTS({ lang: ttsLang, rate: settings.speechRate });
 
   const book = getBookById(bookId);
 

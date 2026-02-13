@@ -236,7 +236,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Dark mode */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <label className="text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark">다크 모드</label>
             <button
               onClick={toggleDarkMode}
@@ -250,6 +250,29 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
+          </div>
+
+          {/* Speech rate */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark">음성 속도</label>
+              <span className="text-sm text-bible-accent font-mono">{settings.speechRate.toFixed(1)}x</span>
+            </div>
+            <input
+              type="range"
+              min={0.5}
+              max={2.0}
+              step={0.1}
+              value={settings.speechRate}
+              onChange={(e) => updateSetting('speechRate', Number(e.target.value))}
+              className="w-full"
+              style={{ accentColor: '#C4956A' }}
+            />
+            <div className="flex justify-between text-[10px] font-sans text-bible-text-secondary/60 dark:text-bible-text-secondary-dark/60">
+              <span>느리게</span>
+              <span>보통</span>
+              <span>빠르게</span>
+            </div>
           </div>
         </section>
 
