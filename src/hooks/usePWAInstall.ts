@@ -15,7 +15,7 @@ export function usePWAInstall() {
     // Check if app is already installed (running in standalone mode)
     const checkInstalled = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isIOSStandalone = (window.navigator as any).standalone === true;
+      const isIOSStandalone = 'standalone' in window.navigator && (window.navigator as unknown as { standalone: boolean }).standalone === true;
       setIsInstalled(isStandalone || isIOSStandalone);
     };
 
