@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   description: "나만의 성경 앱",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon.svg",
+    icon: "/icons/favicon.svg",
     apple: "/icons/icon-192.png",
   },
   appleWebApp: {

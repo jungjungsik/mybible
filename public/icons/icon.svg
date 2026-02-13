@@ -1,12 +1,83 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="80" fill="#1a1a2e"/>
-  <g transform="translate(256,256)">
-    <!-- Book shape -->
-    <path d="M-100,-80 L-100,80 Q-100,100 -80,100 L80,100 Q100,100 100,80 L100,-80 Q100,-100 80,-100 L-80,-100 Q-100,-100 -100,-80 Z" fill="none" stroke="#8B7355" stroke-width="8"/>
-    <!-- Book spine -->
-    <line x1="0" y1="-100" x2="0" y2="100" stroke="#8B7355" stroke-width="4"/>
-    <!-- Cross -->
-    <line x1="0" y1="-60" x2="0" y2="40" stroke="#FAFAF5" stroke-width="12" stroke-linecap="round"/>
-    <line x1="-30" y1="-20" x2="30" y2="-20" stroke="#FAFAF5" stroke-width="12" stroke-linecap="round"/>
-  </g>
+  <defs>
+    <!-- Warm gradient background -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2C1810"/>
+      <stop offset="50%" stop-color="#1A1A2E"/>
+      <stop offset="100%" stop-color="#2C1810"/>
+    </linearGradient>
+    <!-- Gold accent gradient -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A574"/>
+      <stop offset="50%" stop-color="#C4956A"/>
+      <stop offset="100%" stop-color="#A07A52"/>
+    </linearGradient>
+    <!-- Light gold for highlights -->
+    <linearGradient id="lightGold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E8C9A0"/>
+      <stop offset="100%" stop-color="#C4956A"/>
+    </linearGradient>
+    <!-- Subtle inner glow -->
+    <radialGradient id="glow" cx="50%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="#C4956A" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#C4956A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Subtle radial glow behind icon -->
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+
+  <!-- Open book — left page -->
+  <path d="M256,340 C256,340 200,330 140,310 C120,304 108,290 108,268 L108,168 C108,148 120,136 140,142 C200,162 256,172 256,172 Z"
+        fill="none" stroke="url(#gold)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Open book — right page -->
+  <path d="M256,340 C256,340 312,330 372,310 C392,304 404,290 404,268 L404,168 C404,148 392,136 372,142 C312,162 256,172 256,172 Z"
+        fill="none" stroke="url(#gold)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Book spine line -->
+  <line x1="256" y1="172" x2="256" y2="340" stroke="url(#gold)" stroke-width="3" opacity="0.5"/>
+
+  <!-- Left page lines (text suggestion) -->
+  <line x1="138" y1="195" x2="232" y2="205" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/>
+  <line x1="142" y1="218" x2="236" y2="228" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.2"/>
+  <line x1="146" y1="241" x2="240" y2="251" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.15"/>
+  <line x1="150" y1="264" x2="244" y2="274" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.12"/>
+
+  <!-- Right page lines (text suggestion) -->
+  <line x1="280" y1="205" x2="374" y2="195" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/>
+  <line x1="276" y1="228" x2="370" y2="218" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.2"/>
+  <line x1="272" y1="251" x2="366" y2="241" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.15"/>
+  <line x1="268" y1="274" x2="362" y2="264" stroke="#C4956A" stroke-width="2.5" stroke-linecap="round" opacity="0.12"/>
+
+  <!-- Elegant cross rising from book — vertical -->
+  <line x1="256" y1="108" x2="256" y2="172" stroke="url(#lightGold)" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Cross horizontal bar -->
+  <line x1="224" y1="136" x2="288" y2="136" stroke="url(#lightGold)" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Small radiant lines from cross (subtle light rays) -->
+  <line x1="256" y1="100" x2="256" y2="88" stroke="#E8C9A0" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <line x1="234" y1="114" x2="226" y2="106" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+  <line x1="278" y1="114" x2="286" y2="106" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+  <line x1="214" y1="136" x2="204" y2="136" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/>
+  <line x1="298" y1="136" x2="308" y2="136" stroke="#E8C9A0" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/>
+
+  <!-- Decorative corner accents (art deco touch) -->
+  <!-- Top-left -->
+  <path d="M72,72 L72,100 M72,72 L100,72" stroke="#C4956A" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+  <!-- Top-right -->
+  <path d="M440,72 L440,100 M440,72 L412,72" stroke="#C4956A" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+  <!-- Bottom-left -->
+  <path d="M72,440 L72,412 M72,440 L100,440" stroke="#C4956A" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+  <!-- Bottom-right -->
+  <path d="M440,440 L440,412 M440,440 L412,440" stroke="#C4956A" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+
+  <!-- App name at bottom -->
+  <text x="256" y="400" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" font-weight="600" fill="#C4956A" letter-spacing="8" opacity="0.7">
+    BIBLE
+  </text>
 </svg>
