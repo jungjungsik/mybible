@@ -107,7 +107,19 @@ export interface ExportData {
   highlights: Highlight[];
   bookmarks: Bookmark[];
   readingProgress: ReadingProgress[];
+  readingSessions?: ReadingSession[];
   settings: Array<{ key: string; value: unknown }>;
+}
+
+// Reading session (time tracking)
+export interface ReadingSession {
+  id: string;
+  date: string;        // 'YYYY-MM-DD' for easy grouping
+  book: string;
+  chapter: number;
+  durationMs: number;  // milliseconds spent reading
+  startedAt: number;   // unix timestamp
+  endedAt: number;     // unix timestamp
 }
 
 // Parsed reference result

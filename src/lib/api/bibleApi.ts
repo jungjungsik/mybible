@@ -159,18 +159,106 @@ async function persistVerses(chapter: BibleChapter): Promise<void> {
   }
 }
 
+// ── Search types ──
+
+export type SearchScope = 'all' | 'old' | 'new';
+
+interface ScoredMatch {
+  verse: BibleVerse;
+  score: number;
+}
+
+export interface SearchResponse {
+  results: BibleVerse[];
+  totalFound: number;
+}
+
+// Old Testament book IDs for scope filtering
+const OT_BOOKS = new Set([
+  'GEN','EXO','LEV','NUM','DEU','JOS','JDG','RUT','1SA','2SA',
+  '1KI','2KI','1CH','2CH','EZR','NEH','EST','JOB','PSA','PRO',
+  'ECC','SNG','ISA','JER','LAM','EZK','DAN','HOS','JOL','AMO',
+  'OBA','JON','MIC','NAM','HAB','ZEP','HAG','ZEC','MAL',
+]);
+
 /**
- * Search through IndexedDB-persisted verses matching the query.
+ * Score a verse match for relevance ranking.
+ * Higher score = more relevant.
+ */
+function scoreMatch(text: string, tokens: string[]): number {
+  const lowerText = text.toLowerCase();
+  let score = 0;
+
+  for (const token of tokens) {
+    const idx = lowerText.indexOf(token);
+    if (idx === -1) return -1; // All tokens must match
+
+    // Base: found the token
+    score += 10;
+
+    // Bonus: match near the start of verse
+    if (idx < 20) score += 5;
+
+    // Bonus: word boundary match (space or start before token)
+    if (idx === 0 || /\s/.test(lowerText[idx - 1])) score += 8;
+
+    // Bonus: word boundary after token
+    const endIdx = idx + token.length;
+    if (endIdx === lowerText.length || /[\s,.\-;:!?]/.test(lowerText[endIdx])) score += 3;
+
+    // Count multiple occurrences
+    let count = 0;
+    let searchFrom = 0;
+    while (true) {
+      const found = lowerText.indexOf(token, searchFrom);
+      if (found === -1) break;
+      count++;
+      searchFrom = found + 1;
+    }
+    if (count > 1) score += count * 2;
+  }
+
+  // Bonus: shorter verses with matches are more focused/relevant
+  if (text.length < 60) score += 4;
+  else if (text.length < 120) score += 2;
+
+  return score;
+}
+
+/**
+ * Tokenize a search query into individual search terms.
+ * Supports multi-word AND matching.
+ */
+function tokenizeQuery(query: string): string[] {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length >= 2);
+}
+
+/**
+ * Search through IndexedDB-persisted verses with relevance ranking.
  * Falls back to in-memory cache if IndexedDB is empty.
- * Returns up to 50 results.
+ * Supports multi-word AND matching, scope filtering, and pagination.
  */
 export async function searchBible(
   versionId: string,
-  query: string
-): Promise<BibleVerse[]> {
-  if (!query || query.length < 2) return [];
+  query: string,
+  scope: SearchScope = 'all',
+  limit: number = 30
+): Promise<SearchResponse> {
+  if (!query || query.length < 2) return { results: [], totalFound: 0 };
 
-  const lowerQuery = query.toLowerCase();
+  const tokens = tokenizeQuery(query);
+  if (tokens.length === 0) return { results: [], totalFound: 0 };
+
+  const matches: ScoredMatch[] = [];
+
+  function matchesScope(bookId: string): boolean {
+    if (scope === 'all') return true;
+    if (scope === 'old') return OT_BOOKS.has(bookId);
+    return !OT_BOOKS.has(bookId); // 'new'
+  }
 
   // Search persistent IndexedDB cache
   try {
@@ -180,43 +268,67 @@ export async function searchBible(
       .toArray();
 
     if (allVerses.length > 0) {
-      const results: BibleVerse[] = [];
       for (const v of allVerses) {
-        if (v.text.toLowerCase().includes(lowerQuery)) {
-          results.push({
-            book: v.book,
-            chapter: v.chapter,
-            verse: v.verse,
-            text: v.text,
-            version: v.version,
+        if (!matchesScope(v.book)) continue;
+        const score = scoreMatch(v.text, tokens);
+        if (score > 0) {
+          matches.push({
+            verse: {
+              book: v.book,
+              chapter: v.chapter,
+              verse: v.verse,
+              text: v.text,
+              version: v.version,
+            },
+            score,
           });
-          if (results.length >= 50) break;
         }
       }
-      return results;
+
+      // Sort by score descending, then by canonical order (book, chapter, verse)
+      matches.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (a.verse.book !== b.verse.book) return a.verse.book.localeCompare(b.verse.book);
+        if (a.verse.chapter !== b.verse.chapter) return a.verse.chapter - b.verse.chapter;
+        return a.verse.verse - b.verse.verse;
+      });
+
+      return {
+        results: matches.slice(0, limit).map((m) => m.verse),
+        totalFound: matches.length,
+      };
     }
   } catch {
     // Fall through to in-memory cache
   }
 
   // Fallback: in-memory cache
-  const results: BibleVerse[] = [];
   const prefix = versionId + ':';
 
   cache.forEach((chapter, key) => {
-    if (results.length >= 50) return;
     if (!key.startsWith(prefix)) return;
 
     for (let i = 0; i < chapter.verses.length; i++) {
       const verse = chapter.verses[i];
-      if (verse.text.toLowerCase().includes(lowerQuery)) {
-        results.push(verse);
-        if (results.length >= 50) return;
+      if (!matchesScope(verse.book)) continue;
+      const score = scoreMatch(verse.text, tokens);
+      if (score > 0) {
+        matches.push({ verse, score });
       }
     }
   });
 
-  return results;
+  matches.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (a.verse.book !== b.verse.book) return a.verse.book.localeCompare(b.verse.book);
+    if (a.verse.chapter !== b.verse.chapter) return a.verse.chapter - b.verse.chapter;
+    return a.verse.verse - b.verse.verse;
+  });
+
+  return {
+    results: matches.slice(0, limit).map((m) => m.verse),
+    totalFound: matches.length,
+  };
 }
 
 /**

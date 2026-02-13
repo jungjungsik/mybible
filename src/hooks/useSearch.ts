@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { BibleVerse } from '@/types/bible';
-import { searchBible } from '@/lib/api/bibleApi';
+import { searchBible, SearchScope } from '@/lib/api/bibleApi';
 
 interface UseSearchResult {
   results: BibleVerse[];
+  totalFound: number;
   isSearching: boolean;
   error: string | null;
 }
 
 /**
- * React hook for debounced Bible search.
+ * React hook for debounced Bible search with scope and limit.
  *
  * Searches through cached chapters for matching verses.
  * Debounces input by 300ms to avoid excessive calls.
@@ -19,9 +20,12 @@ interface UseSearchResult {
 export function useSearch(
   versionId: string,
   query: string,
-  enabled: boolean = true
+  enabled: boolean = true,
+  scope: SearchScope = 'all',
+  limit: number = 30
 ): UseSearchResult {
   const [results, setResults] = useState<BibleVerse[]>([]);
+  const [totalFound, setTotalFound] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -29,6 +33,7 @@ export function useSearch(
   useEffect(() => {
     if (!enabled || !query || query.length < 2) {
       setResults([]);
+      setTotalFound(0);
       setIsSearching(false);
       setError(null);
       return;
@@ -43,12 +48,14 @@ export function useSearch(
 
     timeoutRef.current = setTimeout(async () => {
       try {
-        const data = await searchBible(versionId, query);
-        setResults(data);
+        const data = await searchBible(versionId, query, scope, limit);
+        setResults(data.results);
+        setTotalFound(data.totalFound);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Search failed');
         setResults([]);
+        setTotalFound(0);
       } finally {
         setIsSearching(false);
       }
@@ -59,7 +66,7 @@ export function useSearch(
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [versionId, query, enabled]);
+  }, [versionId, query, enabled, scope, limit]);
 
-  return { results, isSearching, error };
+  return { results, totalFound, isSearching, error };
 }

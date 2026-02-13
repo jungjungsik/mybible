@@ -8,7 +8,7 @@ import { useRecentReading } from '@/hooks/useReadingProgress';
 import { getDailyVerse } from '@/lib/utils/dailyVerse';
 import { formatReference } from '@/lib/utils/formatReference';
 import { getBookById } from '@/lib/constants/books';
-import { BookOpen, PenSquare, ChevronRight, Clock } from 'lucide-react';
+import { BookOpen, PenSquare, ChevronRight, Clock, BarChart3, ScrollText } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
@@ -115,6 +115,32 @@ export default function Home() {
           </p>
           <QuickJump />
         </section>
+
+        {/* ── Quick Actions ── */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => router.push('/stats')}
+            className="btn-secondary flex items-center gap-3 px-4 py-4 rounded-xl"
+          >
+            <div className="w-9 h-9 rounded-full bg-bible-accent/10 flex items-center justify-center flex-shrink-0">
+              <BarChart3 size={18} className="text-bible-accent" />
+            </div>
+            <div className="text-left flex-1">
+              <p className="text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark">읽기 통계</p>
+            </div>
+          </button>
+          <button
+            onClick={() => router.push('/commandments')}
+            className="btn-secondary flex items-center gap-3 px-4 py-4 rounded-xl"
+          >
+            <div className="w-9 h-9 rounded-full bg-bible-accent/10 flex items-center justify-center flex-shrink-0">
+              <ScrollText size={18} className="text-bible-accent" />
+            </div>
+            <div className="text-left flex-1">
+              <p className="text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark">십계명</p>
+            </div>
+          </button>
+        </div>
 
         {/* ── New Sermon Note ── */}
         <button

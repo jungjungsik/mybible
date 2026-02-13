@@ -6,17 +6,27 @@ import { Header } from '@/components/layout/Header';
 import { SearchResult } from '@/components/search/SearchResult';
 import { VersionSelector } from '@/components/bible/VersionSelector';
 import { useSearch } from '@/hooks/useSearch';
+import { SearchScope } from '@/lib/api/bibleApi';
 import { parseReference } from '@/lib/constants/books';
 import { formatReference } from '@/lib/utils/formatReference';
-import { Search, X, Clock, ArrowRight } from 'lucide-react';
+import { Search, X, Clock, ArrowRight, ChevronDown } from 'lucide-react';
 
 const RECENT_SEARCHES_KEY = 'bible-recent-searches';
 const MAX_RECENT_SEARCHES = 10;
+const PAGE_SIZE = 30;
+
+const SCOPE_OPTIONS: { value: SearchScope; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'old', label: '구약' },
+  { value: 'new', label: '신약' },
+];
 
 export default function SearchPage() {
   const router = useRouter();
   const [version, setVersion] = useState('krv');
   const [query, setQuery] = useState('');
+  const [scope, setScope] = useState<SearchScope>('all');
+  const [limit, setLimit] = useState(PAGE_SIZE);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,12 +47,19 @@ export default function SearchPage() {
     inputRef.current?.focus();
   }, []);
 
+  // Reset limit when query or scope changes
+  useEffect(() => {
+    setLimit(PAGE_SIZE);
+  }, [query, scope]);
+
   // Parse reference if input matches a verse reference
   const parsedReference = query.trim() ? parseReference(query) : null;
 
   // Perform search only if query is >= 2 chars and not a valid reference
   const shouldSearch = query.length >= 2 && !parsedReference;
-  const { results, isSearching, error } = useSearch(version, query, shouldSearch);
+  const { results, totalFound, isSearching, error } = useSearch(version, query, shouldSearch, scope, limit);
+
+  const hasMore = results.length < totalFound;
 
   const addToRecentSearches = (searchQuery: string) => {
     if (!searchQuery.trim()) return;
@@ -69,6 +86,7 @@ export default function SearchPage() {
   };
 
   const handleVerseClick = (book: string, chapter: number, verse: number) => {
+    if (query.length >= 2) addToRecentSearches(query);
     router.push(`/read/${book}/${chapter}?verse=${verse}`);
   };
 
@@ -78,6 +96,10 @@ export default function SearchPage() {
       ? `/read/${parsedReference.book}/${parsedReference.chapter}?verse=${parsedReference.verse}`
       : `/read/${parsedReference.book}/${parsedReference.chapter}`;
     router.push(url);
+  };
+
+  const handleLoadMore = () => {
+    setLimit((prev) => prev + PAGE_SIZE);
   };
 
   return (
@@ -113,6 +135,25 @@ export default function SearchPage() {
             </button>
           )}
         </div>
+
+        {/* Scope Filter Tabs — shown when searching */}
+        {shouldSearch && (
+          <div className="flex gap-1 p-1 bg-bible-surface dark:bg-bible-surface-dark rounded-xl">
+            {SCOPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setScope(opt.value)}
+                className={`flex-1 py-2 text-xs font-sans font-medium rounded-lg transition-colors ${
+                  scope === opt.value
+                    ? 'bg-bible-accent text-white shadow-warm'
+                    : 'text-bible-text-secondary dark:text-bible-text-secondary-dark hover:text-bible-text dark:hover:text-bible-text-dark'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Quick Jump Card - if input is a valid reference */}
         {parsedReference && (
@@ -159,14 +200,36 @@ export default function SearchPage() {
                 검색 결과 없음
               </div>
             ) : (
-              results.map((verse) => (
-                <SearchResult
-                  key={`${verse.book}-${verse.chapter}-${verse.verse}`}
-                  verse={verse}
-                  query={query}
-                  onClick={() => handleVerseClick(verse.book, verse.chapter, verse.verse)}
-                />
-              ))
+              <>
+                {/* Result count */}
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-xs font-sans text-bible-text-secondary dark:text-bible-text-secondary-dark">
+                    {totalFound > results.length
+                      ? `${totalFound}개 중 ${results.length}개 표시`
+                      : `${totalFound}개 결과`}
+                  </p>
+                </div>
+
+                {results.map((verse) => (
+                  <SearchResult
+                    key={`${verse.book}-${verse.chapter}-${verse.verse}`}
+                    verse={verse}
+                    query={query}
+                    onClick={() => handleVerseClick(verse.book, verse.chapter, verse.verse)}
+                  />
+                ))}
+
+                {/* Load More */}
+                {hasMore && (
+                  <button
+                    onClick={handleLoadMore}
+                    className="flex items-center justify-center gap-2 py-3 text-sm font-sans font-medium text-bible-accent hover:bg-bible-accent/5 rounded-xl transition-colors"
+                  >
+                    <ChevronDown size={16} />
+                    더 보기 ({totalFound - results.length}개 남음)
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}

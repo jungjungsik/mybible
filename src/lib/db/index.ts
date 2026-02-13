@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie';
-import { Note, Highlight, Bookmark, ReadingProgress } from '@/types/bible';
+import { Note, Highlight, Bookmark, ReadingProgress, ReadingSession } from '@/types/bible';
 
 export interface SettingsRecord {
   key: string;
@@ -22,6 +22,7 @@ export class ILoveBibleDB extends Dexie {
   readingProgress!: Table<ReadingProgress, string>;
   settings!: Table<SettingsRecord, string>;
   verseCache!: Table<CachedVerse, string>;
+  readingSessions!: Table<ReadingSession, string>;
 
   constructor() {
     super('MyBibleDB');
@@ -46,6 +47,15 @@ export class ILoveBibleDB extends Dexie {
       readingProgress: 'id, [book+chapter], completedAt',
       settings: 'key',
       verseCache: 'id, version, [version+book+chapter], text'
+    });
+    this.version(4).stores({
+      notes: 'id, type, [book+chapter], [book+chapter+verse], date, createdAt',
+      highlights: 'id, [book+chapter], [book+chapter+verse], version, createdAt',
+      bookmarks: 'id, [book+chapter], [book+chapter+verse], createdAt',
+      readingProgress: 'id, [book+chapter], completedAt',
+      settings: 'key',
+      verseCache: 'id, version, [version+book+chapter], text',
+      readingSessions: 'id, date, book, [book+chapter], startedAt'
     });
   }
 }

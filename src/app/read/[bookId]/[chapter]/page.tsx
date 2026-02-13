@@ -18,6 +18,7 @@ import { useNotes } from '@/hooks/useNotes';
 import { useSettings } from '@/hooks/useSettings';
 import { useMarkChapterRead } from '@/hooks/useReadingProgress';
 import { useTTS } from '@/hooks/useTTS';
+import { useReadingTimer } from '@/hooks/useReadingTimer';
 import { getBookById } from '@/lib/constants/books';
 import { getVersionById } from '@/lib/constants/versions';
 import { BibleVerse, HighlightColor } from '@/types/bible';
@@ -52,6 +53,9 @@ export default function ReadPage({ params }: ReadPageProps) {
   const { isPlaying: isTTSPlaying, currentVerseIndex: ttsVerseIndex, play: ttsPlay, pause: ttsPause, resume: ttsResume, stop: ttsStop, isSupported: ttsSupported } = useTTS({ lang: ttsLang, rate: settings.speechRate });
 
   const book = getBookById(bookId);
+
+  // Reading time tracker
+  useReadingTimer(bookId, chapterNum);
 
   // Verse action menu state
   const [selectedVerse, setSelectedVerse] = useState<BibleVerse | null>(null);

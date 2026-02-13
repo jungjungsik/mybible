@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSettings } from '@/hooks/useSettings';
@@ -13,14 +14,17 @@ import { db } from '@/lib/db/index';
 import { ExportData } from '@/types/bible';
 import {
   ChevronDown,
+  ChevronRight,
   Download,
   Upload,
   Trash2,
   BookOpen,
   Smartphone,
+  BarChart3,
 } from 'lucide-react';
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { settings, updateSetting, isLoading } = useSettings();
   const { isDark, toggleDarkMode } = useDarkMode();
   const progress = useReadingProgress();
@@ -46,11 +50,12 @@ export default function SettingsPage() {
 
   // ── Export ──
   const handleExport = useCallback(async () => {
-    const [notes, highlights, bookmarks, readingProgress, settingsRecords] = await Promise.all([
+    const [notes, highlights, bookmarks, readingProgress, readingSessions, settingsRecords] = await Promise.all([
       db.notes.toArray(),
       db.highlights.toArray(),
       db.bookmarks.toArray(),
       db.readingProgress.toArray(),
+      db.readingSessions.toArray(),
       db.settings.toArray(),
     ]);
 
@@ -61,6 +66,7 @@ export default function SettingsPage() {
       highlights,
       bookmarks,
       readingProgress,
+      readingSessions,
       settings: settingsRecords.map(s => ({ key: s.key, value: s.value })),
     };
 
@@ -110,6 +116,11 @@ export default function SettingsPage() {
         await db.readingProgress.bulkPut(data.readingProgress);
         imported += data.readingProgress.length;
       }
+      // Merge reading sessions
+      if (data.readingSessions?.length) {
+        await db.readingSessions.bulkPut(data.readingSessions);
+        imported += data.readingSessions.length;
+      }
       // Merge settings
       if (data.settings?.length) {
         for (const s of data.settings) {
@@ -136,6 +147,7 @@ export default function SettingsPage() {
       db.highlights.clear(),
       db.bookmarks.clear(),
       db.readingProgress.clear(),
+      db.readingSessions.clear(),
       db.settings.clear(),
     ]);
     setShowResetConfirm(false);
@@ -362,6 +374,15 @@ export default function SettingsPage() {
             <ProgressBar label="구약" read={otRead} total={otTotal} />
             <ProgressBar label="신약" read={ntRead} total={ntTotal} />
           </div>
+
+          <button
+            onClick={() => router.push('/stats')}
+            className="w-full flex items-center gap-3 mt-4 px-4 py-3 rounded-xl border border-bible-border dark:border-bible-border-dark text-sm font-sans font-medium text-bible-text dark:text-bible-text-dark hover:bg-bible-surface dark:hover:bg-bible-surface-dark transition-colors"
+          >
+            <BarChart3 size={18} className="text-bible-accent" />
+            <span className="flex-1 text-left">읽기 시간 통계 보기</span>
+            <ChevronRight size={16} className="text-bible-text-secondary/40 dark:text-bible-text-secondary-dark/40" />
+          </button>
         </section>
 
         {/* ── 5. App Info ── */}
