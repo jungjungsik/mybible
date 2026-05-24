@@ -27,7 +27,9 @@ export function BottomSheet({ isOpen, onClose, children, title }: BottomSheetPro
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    // z-[60] sits above the BottomNav (z-50) so the sheet's bottom
+    // actions (save/share buttons in ShareSheet) aren't clipped.
+    <div className="fixed inset-0 z-[60]">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
