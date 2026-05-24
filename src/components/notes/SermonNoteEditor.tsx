@@ -4,25 +4,29 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { parseReference } from '@/lib/constants/books';
 import { formatReference } from '@/lib/utils/formatReference';
+import { formatVerseQuote } from '@/lib/utils/verseQuote';
 import { useBible } from '@/hooks/useBible';
 import { useAddNote, useUpdateNote, useDeleteNote } from '@/hooks/useNotes';
 import { getNoteById } from '@/lib/db/notes';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Trash2, BookOpen } from 'lucide-react';
+import { MarkdownView } from '@/components/notes/MarkdownView';
+import { Trash2, BookOpen, Quote, Eye, Pencil } from 'lucide-react';
+import clsx from 'clsx';
 import type { Note } from '@/types/bible';
 
 interface SermonNoteEditorProps {
   noteId?: string;
+  initialContent?: string;
 }
 
-export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
+export function SermonNoteEditor({ noteId, initialContent }: SermonNoteEditorProps) {
   const router = useRouter();
   const { addNote } = useAddNote();
   const { updateNote } = useUpdateNote();
   const { deleteNote } = useDeleteNote();
 
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(initialContent ?? '');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [referenceInput, setReferenceInput] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -30,8 +34,10 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
   const [isLoaded, setIsLoaded] = useState(!noteId);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [savedNoteId, setSavedNoteId] = useState<string | null>(noteId ?? null);
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasInitialized = useRef(false);
 
   // Parse the scripture reference
@@ -67,7 +73,6 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
         setContent(note.content);
         setDate(note.date);
         setTagsInput(note.tags?.join(', ') ?? '');
-        // Reconstruct reference input from stored book/chapter/verse
         if (note.book && note.chapter) {
           const ref = formatReference(note.book, note.chapter, note.verse);
           setReferenceInput(ref);
@@ -101,7 +106,6 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
 
   // Save the note
   const handleSave = useCallback(async () => {
-    // Don't save if completely empty
     if (!title.trim() && !content.trim()) return;
 
     setIsSaving(true);
@@ -113,7 +117,6 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
         const id = await addNote(noteData);
         if (id) {
           setSavedNoteId(id);
-          // Replace URL so we don't create a new note if user refreshes
           router.replace(`/notes/sermon/${id}`);
         }
       }
@@ -149,6 +152,22 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
     }
     setShowDeleteConfirm(false);
     router.push('/notes');
+  };
+
+  const handleInsertQuote = () => {
+    if (scriptureVerses.length === 0 || !parsed) return;
+    const quote = formatVerseQuote(
+      scriptureVerses.map((v) => ({
+        book: parsed.book,
+        chapter: parsed.chapter,
+        verse: v.verse,
+        text: v.text,
+        version: 'krv',
+      }))
+    );
+    setContent((prev) => (prev ? `${quote}${prev}` : quote));
+    setMode('edit');
+    setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   if (!isLoaded) {
@@ -205,9 +224,7 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
           {referenceInput.trim() && (
             <p
               className={`font-sans text-xs px-1 ml-6 ${
-                parsed
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-500 dark:text-red-400'
+                parsed ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
               }`}
             >
               {parsed ? resolvedLabel : '알 수 없는 구절'}
@@ -215,11 +232,18 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
           )}
         </div>
 
-        {/* Scripture text display */}
+        {/* Scripture text display + insert quote button */}
         {scriptureVerses.length > 0 && (
           <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 max-h-48 overflow-y-auto">
-            <div className="text-xs font-semibold text-bible-accent mb-2">
-              {resolvedLabel}
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-semibold text-bible-accent">{resolvedLabel}</div>
+              <button
+                onClick={handleInsertQuote}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs font-sans rounded-md bg-bible-accent/10 text-bible-accent hover:bg-bible-accent/15 transition-colors"
+              >
+                <Quote size={11} />
+                노트에 인용 삽입
+              </button>
             </div>
             <div className="space-y-1">
               {scriptureVerses.map((v) => (
@@ -237,14 +261,53 @@ export function SermonNoteEditor({ noteId }: SermonNoteEditorProps) {
           </div>
         )}
 
-        {/* Notes textarea */}
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="설교 노트를 입력하세요..."
-          rows={12}
-          className="font-serif w-full p-4 text-base leading-relaxed border border-bible-border dark:border-bible-border-dark rounded-xl bg-white dark:bg-bible-surface-dark focus:outline-none focus:ring-2 focus:ring-bible-accent/50 focus:border-bible-accent resize-none"
-        />
+        {/* Mode toggle */}
+        <div className="flex items-center justify-end">
+          <div className="flex items-center gap-1 p-0.5 bg-bible-surface dark:bg-bible-surface-dark rounded-lg">
+            <button
+              type="button"
+              onClick={() => setMode('edit')}
+              className={clsx(
+                'flex items-center gap-1 px-2.5 py-1 text-xs font-sans rounded-md transition-colors',
+                mode === 'edit'
+                  ? 'bg-white dark:bg-bible-bg-dark text-bible-accent shadow-sm'
+                  : 'text-bible-text-secondary dark:text-bible-text-secondary-dark'
+              )}
+            >
+              <Pencil size={11} />
+              편집
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('preview')}
+              className={clsx(
+                'flex items-center gap-1 px-2.5 py-1 text-xs font-sans rounded-md transition-colors',
+                mode === 'preview'
+                  ? 'bg-white dark:bg-bible-bg-dark text-bible-accent shadow-sm'
+                  : 'text-bible-text-secondary dark:text-bible-text-secondary-dark'
+              )}
+            >
+              <Eye size={11} />
+              미리보기
+            </button>
+          </div>
+        </div>
+
+        {/* Notes textarea or preview */}
+        {mode === 'edit' ? (
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="설교 노트를 입력하세요. 마크다운 지원: ## 제목, **굵게**, - 목록, > 인용"
+            rows={14}
+            className="font-serif w-full p-4 text-base leading-relaxed border border-bible-border dark:border-bible-border-dark rounded-xl bg-white dark:bg-bible-surface-dark focus:outline-none focus:ring-2 focus:ring-bible-accent/50 focus:border-bible-accent resize-none"
+          />
+        ) : (
+          <div className="w-full p-4 min-h-[300px] border border-bible-border dark:border-bible-border-dark rounded-xl bg-white dark:bg-bible-surface-dark">
+            <MarkdownView content={content} />
+          </div>
+        )}
 
         {/* Tags */}
         <input

@@ -2,14 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Play, Pause, Square } from 'lucide-react';
+import { Play, Pause, Square, Sparkles } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { VerseSkeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { VersionSelector } from '@/components/bible/VersionSelector';
 import { ChapterView } from '@/components/bible/ChapterView';
 import { ChapterNavigation } from '@/components/bible/ChapterNavigation';
 import { VerseActionMenu } from '@/components/bible/VerseActionMenu';
+import { CrossRefSheet } from '@/components/bible/CrossRefSheet';
+import { ShareSheet } from '@/components/bible/ShareSheet';
+import { MemorizeSheet } from '@/components/bible/MemorizeSheet';
 import { VerseNoteEditor } from '@/components/notes/VerseNoteEditor';
 import { useBible } from '@/hooks/useBible';
 import { useHighlights, useToggleHighlight } from '@/hooks/useHighlights';
@@ -19,7 +23,8 @@ import { useSettings } from '@/hooks/useSettings';
 import { useMarkChapterRead } from '@/hooks/useReadingProgress';
 import { useTTS } from '@/hooks/useTTS';
 import { useReadingTimer } from '@/hooks/useReadingTimer';
-import { getBookById } from '@/lib/constants/books';
+import { useSwipeNav } from '@/hooks/useSwipeNav';
+import { getBookById, getAdjacentChapter } from '@/lib/constants/books';
 import { getVersionById } from '@/lib/constants/versions';
 import { BibleVerse, HighlightColor } from '@/types/bible';
 
@@ -62,6 +67,12 @@ export default function ReadPage({ params }: ReadPageProps) {
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showMemoEditor, setShowMemoEditor] = useState(false);
   const [memoVerse, setMemoVerse] = useState<BibleVerse | null>(null);
+  const [showCrossRefs, setShowCrossRefs] = useState(false);
+  const [crossRefVerse, setCrossRefVerse] = useState<BibleVerse | null>(null);
+  const [showShare, setShowShare] = useState(false);
+  const [shareVerse, setShareVerse] = useState<BibleVerse | null>(null);
+  const [showMemorize, setShowMemorize] = useState(false);
+  const [memorizeVerse, setMemorizeVerse] = useState<BibleVerse | null>(null);
 
   // Save lastRead and mark chapter read when data loads
   useEffect(() => {
@@ -118,6 +129,27 @@ export default function ReadPage({ params }: ReadPageProps) {
     router.push(`/compare?book=${selectedVerse.book}&chapter=${selectedVerse.chapter}&verse=${selectedVerse.verse}`);
   }, [selectedVerse, router]);
 
+  const handleCrossRefs = useCallback(() => {
+    if (!selectedVerse) return;
+    setCrossRefVerse(selectedVerse);
+    setShowActionMenu(false);
+    setShowCrossRefs(true);
+  }, [selectedVerse]);
+
+  const handleShare = useCallback(() => {
+    if (!selectedVerse) return;
+    setShareVerse(selectedVerse);
+    setShowActionMenu(false);
+    setShowShare(true);
+  }, [selectedVerse]);
+
+  const handleMemorize = useCallback(() => {
+    if (!selectedVerse) return;
+    setMemorizeVerse(selectedVerse);
+    setShowActionMenu(false);
+    setShowMemorize(true);
+  }, [selectedVerse]);
+
   const handleVersionChange = useCallback(
     (versionId: string) => {
       updateSetting('currentVersion', versionId);
@@ -135,6 +167,20 @@ export default function ReadPage({ params }: ReadPageProps) {
 
   const headerTitle = book ? `${book.name} ${chapterNum}장` : `${bookId} ${chapterNum}`;
 
+  // Swipe navigation — disabled while a sheet is open so it doesn't
+  // fight modal gestures or accidental verse selections.
+  const swipeHandlers = useSwipeNav({
+    enabled: !showActionMenu && !showMemoEditor && !showCrossRefs && !showShare && !showMemorize,
+    onSwipeLeft: () => {
+      const next = getAdjacentChapter(bookId, chapterNum, 'next');
+      if (next) router.push(`/read/${next.bookId}/${next.chapter}`);
+    },
+    onSwipeRight: () => {
+      const prev = getAdjacentChapter(bookId, chapterNum, 'prev');
+      if (prev) router.push(`/read/${prev.bookId}/${prev.chapter}`);
+    },
+  });
+
   return (
     <>
       <Header
@@ -142,6 +188,14 @@ export default function ReadPage({ params }: ReadPageProps) {
         showBack
         rightActions={
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => router.push(`/qt/${bookId}/${chapterNum}`)}
+              className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="묵상 모드"
+              title="묵상 모드"
+            >
+              <Sparkles size={16} className="text-bible-accent" />
+            </button>
             {ttsSupported && (
               <button
                 onClick={() => {
@@ -189,20 +243,22 @@ export default function ReadPage({ params }: ReadPageProps) {
       )}
 
       {/* Chapter content */}
-      <main className="min-h-[60vh]">
+      <main className="min-h-[60vh]" {...swipeHandlers}>
         {isLoading && !data && <VerseSkeleton />}
         {error && !isLoading && <ErrorState message={error} onRetry={refetch} />}
         {!isLoading && data && (
-          <ChapterView
-            chapter={data}
-            highlights={highlights}
-            bookmarks={bookmarks}
-            notes={notes}
-            fontSize={settings.fontSize}
-            onVerseTap={handleVerseTap}
-            scrollToVerse={scrollToVerse}
-            activeVerseIndex={ttsVerseIndex}
-          />
+          <ErrorBoundary>
+            <ChapterView
+              chapter={data}
+              highlights={highlights}
+              bookmarks={bookmarks}
+              notes={notes}
+              fontSize={settings.fontSize}
+              onVerseTap={handleVerseTap}
+              scrollToVerse={scrollToVerse}
+              activeVerseIndex={ttsVerseIndex}
+            />
+          </ErrorBoundary>
         )}
       </main>
 
@@ -224,8 +280,42 @@ export default function ReadPage({ params }: ReadPageProps) {
         onBookmark={handleBookmark}
         onMemo={handleMemo}
         onCompare={handleCompare}
+        onCrossRefs={handleCrossRefs}
+        onShare={handleShare}
+        onMemorize={handleMemorize}
         currentHighlight={currentHighlight}
         isBookmarked={isSelectedBookmarked}
+      />
+
+      {/* Cross-reference sheet */}
+      <CrossRefSheet
+        isOpen={showCrossRefs}
+        onClose={() => {
+          setShowCrossRefs(false);
+          setTimeout(() => setCrossRefVerse(null), 300);
+        }}
+        source={crossRefVerse}
+        versionId={settings.currentVersion}
+      />
+
+      {/* Share-as-image sheet */}
+      <ShareSheet
+        isOpen={showShare}
+        onClose={() => {
+          setShowShare(false);
+          setTimeout(() => setShareVerse(null), 300);
+        }}
+        source={shareVerse}
+      />
+
+      {/* Memorize sheet */}
+      <MemorizeSheet
+        isOpen={showMemorize}
+        onClose={() => {
+          setShowMemorize(false);
+          setTimeout(() => setMemorizeVerse(null), 300);
+        }}
+        source={memorizeVerse}
       />
 
       {/* Verse note editor */}

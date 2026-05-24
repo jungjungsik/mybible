@@ -1,10 +1,11 @@
 'use client';
 
-import { Copy, Bookmark, PenSquare, ArrowLeftRight } from 'lucide-react';
+import { Copy, Bookmark, PenSquare, ArrowLeftRight, Link2, Share2, Brain } from 'lucide-react';
 import { BibleVerse, Highlight, HighlightColor } from '@/types/bible';
 import { HIGHLIGHT_COLORS } from '@/lib/constants/colors';
 import { formatReference } from '@/lib/utils/formatReference';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { hasCrossReferences } from '@/lib/constants/crossRefs';
 import clsx from 'clsx';
 
 interface VerseActionMenuProps {
@@ -15,6 +16,9 @@ interface VerseActionMenuProps {
   onBookmark: () => void;
   onMemo: () => void;
   onCompare: () => void;
+  onCrossRefs: () => void;
+  onShare: () => void;
+  onMemorize: () => void;
   currentHighlight?: Highlight;
   isBookmarked: boolean;
 }
@@ -27,10 +31,15 @@ export function VerseActionMenu({
   onBookmark,
   onMemo,
   onCompare,
+  onCrossRefs,
+  onShare,
+  onMemorize,
   currentHighlight,
   isBookmarked,
 }: VerseActionMenuProps) {
   if (!verse) return null;
+
+  const showCrossRefs = hasCrossReferences(verse.book, verse.chapter, verse.verse);
 
   const reference = formatReference(verse.book, verse.chapter, verse.verse);
   const truncatedText =
@@ -127,6 +136,44 @@ export function VerseActionMenu({
         >
           <ArrowLeftRight size={20} className="text-bible-accent dark:text-bible-accent-dark" />
           <span className="text-sm">다른 버전으로 보기</span>
+        </button>
+
+        {/* Cross-references (only when curated set exists) */}
+        {showCrossRefs && (
+          <button
+            onClick={() => {
+              onCrossRefs();
+              onClose();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl font-sans hover:bg-bible-accent/5 dark:hover:bg-bible-accent-dark/5 transition-colors"
+          >
+            <Link2 size={20} className="text-bible-accent dark:text-bible-accent-dark" />
+            <span className="text-sm">관련 구절</span>
+          </button>
+        )}
+
+        {/* Share as image */}
+        <button
+          onClick={() => {
+            onShare();
+            onClose();
+          }}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl font-sans hover:bg-bible-accent/5 dark:hover:bg-bible-accent-dark/5 transition-colors"
+        >
+          <Share2 size={20} className="text-bible-accent dark:text-bible-accent-dark" />
+          <span className="text-sm">이미지로 공유</span>
+        </button>
+
+        {/* Memorize */}
+        <button
+          onClick={() => {
+            onMemorize();
+            onClose();
+          }}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl font-sans hover:bg-bible-accent/5 dark:hover:bg-bible-accent-dark/5 transition-colors"
+        >
+          <Brain size={20} className="text-bible-accent dark:text-bible-accent-dark" />
+          <span className="text-sm">암송 연습</span>
         </button>
       </div>
     </BottomSheet>

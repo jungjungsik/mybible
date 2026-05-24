@@ -41,20 +41,25 @@ function splitKoreanForSpeech(text: string): string[] {
 export function useTTS({ lang, rate = 1.0 }: UseTTSOptions): UseTTSResult {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState<number | null>(null);
+  // isSupported starts false so SSR and first client render agree;
+  // it flips on after mount, avoiding hydration mismatch on TTS buttons.
+  const [isSupported, setIsSupported] = useState(false);
   const versesRef = useRef<BibleVerse[]>([]);
   const indexRef = useRef(0);
   const isPlayingRef = useRef(false);
 
-  const isSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  useEffect(() => {
+    setIsSupported(typeof window !== 'undefined' && 'speechSynthesis' in window);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (isSupported) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
-  }, [isSupported]);
+  }, []);
 
   const speakSegments = useCallback((segments: string[], segIndex: number, verseIndex: number, onDone: () => void) => {
     if (!isSupported || segIndex >= segments.length || !isPlayingRef.current) {

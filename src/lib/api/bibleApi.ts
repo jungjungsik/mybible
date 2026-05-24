@@ -7,7 +7,7 @@
  * - Exposes search across cached chapters
  */
 
-import { BibleChapter, BibleVerse, SourceApi } from '@/types/bible';
+import { BibleChapter, BibleVerse, SearchResultItem, SourceApi } from '@/types/bible';
 import { getVersionById } from '@/lib/constants/versions';
 import { fetchWldehChapter } from '@/lib/api/providers/wldeh';
 import { fetchHelloaoChapter } from '@/lib/api/providers/helloao';
@@ -169,12 +169,17 @@ interface ScoredMatch {
 }
 
 export interface SearchResponse {
-  results: BibleVerse[];
+  results: SearchResultItem[];
   totalFound: number;
 }
 
+export interface SearchOptions {
+  /** Include surrounding verses (±1) for each match. Default: true */
+  withContext?: boolean;
+}
+
 // Old Testament book IDs for scope filtering
-const OT_BOOKS = new Set([
+export const OT_BOOKS = new Set([
   'GEN','EXO','LEV','NUM','DEU','JOS','JDG','RUT','1SA','2SA',
   '1KI','2KI','1CH','2CH','EZR','NEH','EST','JOB','PSA','PRO',
   'ECC','SNG','ISA','JER','LAM','EZK','DAN','HOS','JOL','AMO',
@@ -184,8 +189,9 @@ const OT_BOOKS = new Set([
 /**
  * Score a verse match for relevance ranking.
  * Higher score = more relevant.
+ * Exported for testing.
  */
-function scoreMatch(text: string, tokens: string[]): number {
+export function scoreMatch(text: string, tokens: string[]): number {
   const lowerText = text.toLowerCase();
   let score = 0;
 
@@ -228,25 +234,85 @@ function scoreMatch(text: string, tokens: string[]): number {
 /**
  * Tokenize a search query into individual search terms.
  * Supports multi-word AND matching.
+ * Exported for testing.
  */
-function tokenizeQuery(query: string): string[] {
+export function tokenizeQuery(query: string): string[] {
   return query
     .toLowerCase()
     .split(/\s+/)
     .filter((t) => t.length >= 2);
 }
 
+function compareMatches(a: ScoredMatch, b: ScoredMatch): number {
+  if (b.score !== a.score) return b.score - a.score;
+  if (a.verse.book !== b.verse.book) return a.verse.book.localeCompare(b.verse.book);
+  if (a.verse.chapter !== b.verse.chapter) return a.verse.chapter - b.verse.chapter;
+  return a.verse.verse - b.verse.verse;
+}
+
+/**
+ * Fetch ±1 verses around each match (same chapter only). Uses a single
+ * bulkGet keyed by verseCache id to keep round-trips bounded.
+ */
+async function attachContext(
+  versionId: string,
+  verses: BibleVerse[]
+): Promise<SearchResultItem[]> {
+  if (verses.length === 0) return [];
+
+  const ids: string[] = [];
+  const requested = new Set<string>();
+
+  for (const v of verses) {
+    for (const delta of [-1, 1]) {
+      const target = v.verse + delta;
+      if (target < 1) continue;
+      const id = `${versionId}:${v.book}:${v.chapter}:${target}`;
+      if (!requested.has(id)) {
+        requested.add(id);
+        ids.push(id);
+      }
+    }
+  }
+
+  const lookup = new Map<string, BibleVerse>();
+  try {
+    const rows = await db.verseCache.bulkGet(ids);
+    for (const row of rows) {
+      if (!row) continue;
+      lookup.set(row.id, {
+        book: row.book,
+        chapter: row.chapter,
+        verse: row.verse,
+        text: row.text,
+        version: row.version,
+      });
+    }
+  } catch {
+    // No context available — return verses without surrounding text.
+  }
+
+  return verses.map((verse) => ({
+    verse,
+    contextBefore: lookup.get(`${versionId}:${verse.book}:${verse.chapter}:${verse.verse - 1}`),
+    contextAfter: lookup.get(`${versionId}:${verse.book}:${verse.chapter}:${verse.verse + 1}`),
+  }));
+}
+
 /**
  * Search through IndexedDB-persisted verses with relevance ranking.
  * Falls back to in-memory cache if IndexedDB is empty.
  * Supports multi-word AND matching, scope filtering, and pagination.
+ * Attaches ±1 verse context unless options.withContext is false.
  */
 export async function searchBible(
   versionId: string,
   query: string,
   scope: SearchScope = 'all',
-  limit: number = 30
+  limit: number = 30,
+  options: SearchOptions = {}
 ): Promise<SearchResponse> {
+  const withContext = options.withContext !== false;
   if (!query || query.length < 2) return { results: [], totalFound: 0 };
 
   const tokens = tokenizeQuery(query);
@@ -260,16 +326,16 @@ export async function searchBible(
     return !OT_BOOKS.has(bookId); // 'new'
   }
 
-  // Search persistent IndexedDB cache
+  // Search persistent IndexedDB cache via streaming (each) to avoid
+  // materializing the full verseCache (~31k rows) into memory.
+  let usedDb = false;
   try {
-    const allVerses = await db.verseCache
+    await db.verseCache
       .where('version')
       .equals(versionId)
-      .toArray();
-
-    if (allVerses.length > 0) {
-      for (const v of allVerses) {
-        if (!matchesScope(v.book)) continue;
+      .each((v) => {
+        usedDb = true;
+        if (!matchesScope(v.book)) return;
         const score = scoreMatch(v.text, tokens);
         if (score > 0) {
           matches.push({
@@ -283,50 +349,35 @@ export async function searchBible(
             score,
           });
         }
-      }
-
-      // Sort by score descending, then by canonical order (book, chapter, verse)
-      matches.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        if (a.verse.book !== b.verse.book) return a.verse.book.localeCompare(b.verse.book);
-        if (a.verse.chapter !== b.verse.chapter) return a.verse.chapter - b.verse.chapter;
-        return a.verse.verse - b.verse.verse;
       });
-
-      return {
-        results: matches.slice(0, limit).map((m) => m.verse),
-        totalFound: matches.length,
-      };
-    }
   } catch {
     // Fall through to in-memory cache
   }
 
-  // Fallback: in-memory cache
-  const prefix = versionId + ':';
-
-  cache.forEach((chapter, key) => {
-    if (!key.startsWith(prefix)) return;
-
-    for (let i = 0; i < chapter.verses.length; i++) {
-      const verse = chapter.verses[i];
-      if (!matchesScope(verse.book)) continue;
-      const score = scoreMatch(verse.text, tokens);
-      if (score > 0) {
-        matches.push({ verse, score });
+  if (!usedDb) {
+    // Fallback: in-memory cache
+    const prefix = versionId + ':';
+    cache.forEach((chapter, key) => {
+      if (!key.startsWith(prefix)) return;
+      for (const verse of chapter.verses) {
+        if (!matchesScope(verse.book)) continue;
+        const score = scoreMatch(verse.text, tokens);
+        if (score > 0) {
+          matches.push({ verse, score });
+        }
       }
-    }
-  });
+    });
+  }
 
-  matches.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    if (a.verse.book !== b.verse.book) return a.verse.book.localeCompare(b.verse.book);
-    if (a.verse.chapter !== b.verse.chapter) return a.verse.chapter - b.verse.chapter;
-    return a.verse.verse - b.verse.verse;
-  });
+  matches.sort(compareMatches);
+
+  const topVerses = matches.slice(0, limit).map((m) => m.verse);
+  const results = withContext
+    ? await attachContext(versionId, topVerses)
+    : topVerses.map((verse) => ({ verse }));
 
   return {
-    results: matches.slice(0, limit).map((m) => m.verse),
+    results,
     totalFound: matches.length,
   };
 }

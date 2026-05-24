@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { QuickJump } from '@/components/bible/QuickJump';
+import { TodayPlanCard } from '@/components/plans/TodayPlanCard';
 import { useSettings } from '@/hooks/useSettings';
 import { useRecentReading } from '@/hooks/useReadingProgress';
 import { getDailyVerse } from '@/lib/utils/dailyVerse';
@@ -79,6 +80,9 @@ export default function Home() {
             )}
           </section>
         )}
+
+        {/* ── Today's Reading Plan ── */}
+        <TodayPlanCard />
 
         {/* ── Recently Read ── */}
         {recentReading.length > 0 && (

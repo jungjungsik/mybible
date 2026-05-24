@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Eye, Pencil, Quote } from 'lucide-react';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { MarkdownView } from '@/components/notes/MarkdownView';
 import { formatReference } from '@/lib/utils/formatReference';
+import { formatVerseQuote } from '@/lib/utils/verseQuote';
 import { useVerseNotes, useAddNote, useUpdateNote, useDeleteNote } from '@/hooks/useNotes';
+import clsx from 'clsx';
 
 interface VerseNoteEditorProps {
   isOpen: boolean;
@@ -34,6 +38,7 @@ export function VerseNoteEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [noteId, setNoteId] = useState<string | null>(null);
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -46,14 +51,15 @@ export function VerseNoteEditor({
       setContent('');
       setNoteId(null);
     }
+    if (isOpen) setMode('edit');
   }, [isOpen, existingNote]);
 
   // Focus textarea when opened
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && mode === 'edit') {
       setTimeout(() => textareaRef.current?.focus(), 300);
     }
-  }, [isOpen]);
+  }, [isOpen, mode]);
 
   // Auto-save with 2s debounce
   useEffect(() => {
@@ -126,13 +132,22 @@ export function VerseNoteEditor({
     onClose();
   };
 
+  const handleInsertQuote = () => {
+    const quote = formatVerseQuote([
+      { book, chapter, verse, text: verseText, version: '' },
+    ]);
+    setContent((prev) => (prev ? `${quote}${prev}` : quote));
+    setMode('edit');
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
   const reference = formatReference(book, chapter, verse);
 
   return (
     <>
       <BottomSheet isOpen={isOpen} onClose={handleClose} title="메모">
         {/* Verse reference and text */}
-        <div className="mb-4 p-3 bg-bible-surface/50 dark:bg-bible-surface-dark/50 rounded-lg">
+        <div className="mb-3 p-3 bg-bible-surface/50 dark:bg-bible-surface-dark/50 rounded-lg">
           <div className="font-display text-sm font-semibold text-bible-accent mb-1">
             {reference}
           </div>
@@ -141,21 +156,37 @@ export function VerseNoteEditor({
           </p>
         </div>
 
-        {/* Textarea */}
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="메모를 입력하세요..."
-          rows={5}
-          className="w-full p-3 text-base border border-bible-border dark:border-bible-border-dark rounded-xl bg-white dark:bg-bible-surface-dark focus:outline-none focus:ring-2 focus:ring-bible-accent/50 focus:border-bible-accent resize-none"
-        />
+        {/* Toolbar */}
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={handleInsertQuote}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-sans rounded-lg bg-bible-accent/10 text-bible-accent hover:bg-bible-accent/15 transition-colors"
+          >
+            <Quote size={12} />
+            구절 인용 삽입
+          </button>
+          <ModeToggle mode={mode} setMode={setMode} />
+        </div>
+
+        {/* Textarea or preview */}
+        {mode === 'edit' ? (
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="메모를 입력하세요. 마크다운 지원: **굵게**, # 제목, - 목록"
+            rows={6}
+            className="font-sans w-full p-3 text-base border border-bible-border dark:border-bible-border-dark rounded-xl bg-white dark:bg-bible-surface-dark focus:outline-none focus:ring-2 focus:ring-bible-accent/50 focus:border-bible-accent resize-none"
+          />
+        ) : (
+          <div className="w-full p-3 min-h-[150px] border border-bible-border dark:border-bible-border-dark rounded-xl bg-white dark:bg-bible-surface-dark">
+            <MarkdownView content={content} />
+          </div>
+        )}
 
         {/* Saving indicator */}
         {isSaving && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            저장 중...
-          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">저장 중...</p>
         )}
 
         {/* Actions */}
@@ -171,16 +202,10 @@ export function VerseNoteEditor({
             )}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={handleClose}
-              className="btn-secondary"
-            >
+            <button onClick={handleClose} className="btn-secondary">
               취소
             </button>
-            <button
-              onClick={handleManualSave}
-              className="btn-primary"
-            >
+            <button onClick={handleManualSave} className="btn-primary">
               저장
             </button>
           </div>
@@ -198,5 +223,44 @@ export function VerseNoteEditor({
         onCancel={() => setShowDeleteConfirm(false)}
       />
     </>
+  );
+}
+
+function ModeToggle({
+  mode,
+  setMode,
+}: {
+  mode: 'edit' | 'preview';
+  setMode: (m: 'edit' | 'preview') => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 p-0.5 bg-bible-surface dark:bg-bible-surface-dark rounded-lg">
+      <button
+        type="button"
+        onClick={() => setMode('edit')}
+        className={clsx(
+          'flex items-center gap-1 px-2 py-1 text-xs font-sans rounded-md transition-colors',
+          mode === 'edit'
+            ? 'bg-white dark:bg-bible-bg-dark text-bible-accent shadow-sm'
+            : 'text-bible-text-secondary dark:text-bible-text-secondary-dark'
+        )}
+      >
+        <Pencil size={11} />
+        편집
+      </button>
+      <button
+        type="button"
+        onClick={() => setMode('preview')}
+        className={clsx(
+          'flex items-center gap-1 px-2 py-1 text-xs font-sans rounded-md transition-colors',
+          mode === 'preview'
+            ? 'bg-white dark:bg-bible-bg-dark text-bible-accent shadow-sm'
+            : 'text-bible-text-secondary dark:text-bible-text-secondary-dark'
+        )}
+      >
+        <Eye size={11} />
+        미리보기
+      </button>
+    </div>
   );
 }

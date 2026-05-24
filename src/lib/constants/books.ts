@@ -187,6 +187,30 @@ export function getNewTestament(): BibleBook[] {
   return BIBLE_BOOKS.filter(b => b.testament === 'new');
 }
 
+/**
+ * Compute the chapter immediately before or after the given location,
+ * crossing book boundaries (Genesis 1 has no prev; Revelation 22 has no next).
+ */
+export function getAdjacentChapter(
+  bookId: string,
+  chapter: number,
+  direction: 'next' | 'prev'
+): { bookId: string; chapter: number } | null {
+  const idx = BIBLE_BOOKS.findIndex((b) => b.id === bookId);
+  if (idx === -1) return null;
+  const book = BIBLE_BOOKS[idx];
+
+  if (direction === 'next') {
+    if (chapter < book.chapters) return { bookId, chapter: chapter + 1 };
+    const nextBook = BIBLE_BOOKS[idx + 1];
+    return nextBook ? { bookId: nextBook.id, chapter: 1 } : null;
+  }
+
+  if (chapter > 1) return { bookId, chapter: chapter - 1 };
+  const prevBook = BIBLE_BOOKS[idx - 1];
+  return prevBook ? { bookId: prevBook.id, chapter: prevBook.chapters } : null;
+}
+
 // ============================================================================
 // Reference parsing
 // ============================================================================

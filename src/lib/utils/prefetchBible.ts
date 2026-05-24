@@ -137,7 +137,10 @@ export function prefetchAllChapters(
     }
   };
 
-  run();
+  run().catch(() => {
+    // run() already routes errors through onProgress; this absorbs any
+    // late AbortError that escapes the inner try/catch.
+  });
 
   return {
     abort: () => {

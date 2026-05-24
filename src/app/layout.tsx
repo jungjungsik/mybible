@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/favicon.svg",
-    apple: "/icons/icon-192.png",
+    apple: "/icons/icon-180.png",
   },
   appleWebApp: {
     capable: true,
@@ -56,7 +56,10 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${notoSerifKr.variable} ${dmSans.variable} ${playfairDisplay.variable}`} suppressHydrationWarning>
       <head>
-        {/* Blocking script to prevent dark mode FOUC */}
+        {/* Blocking script: dark mode FOUC + AbortError suppression.
+            Installed before React mounts so it captures rejections from
+            Strict Mode mount/abort races that fire before any React-level
+            listener gets a chance. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -67,6 +70,14 @@ export default function RootLayout({
                     document.documentElement.classList.add('dark');
                   }
                 } catch(e) {}
+                window.addEventListener('unhandledrejection', function(e) {
+                  var r = e.reason;
+                  if (r && (r.name === 'AbortError' ||
+                            (typeof DOMException !== 'undefined' && r instanceof DOMException && r.name === 'AbortError'))) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation && e.stopImmediatePropagation();
+                  }
+                }, true);
               })();
             `,
           }}

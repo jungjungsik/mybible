@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { BibleVerse } from '@/types/bible';
+import { SearchResultItem } from '@/types/bible';
 import { searchBible, SearchScope } from '@/lib/api/bibleApi';
 
 interface UseSearchResult {
-  results: BibleVerse[];
+  results: SearchResultItem[];
   totalFound: number;
   isSearching: boolean;
   error: string | null;
@@ -24,7 +24,7 @@ export function useSearch(
   scope: SearchScope = 'all',
   limit: number = 30
 ): UseSearchResult {
-  const [results, setResults] = useState<BibleVerse[]>([]);
+  const [results, setResults] = useState<SearchResultItem[]>([]);
   const [totalFound, setTotalFound] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);

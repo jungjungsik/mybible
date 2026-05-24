@@ -210,12 +210,12 @@ export default function SearchPage() {
                   </p>
                 </div>
 
-                {results.map((verse) => (
+                {results.map((item) => (
                   <SearchResult
-                    key={`${verse.book}-${verse.chapter}-${verse.verse}`}
-                    verse={verse}
+                    key={`${item.verse.book}-${item.verse.chapter}-${item.verse.verse}`}
+                    item={item}
                     query={query}
-                    onClick={() => handleVerseClick(verse.book, verse.chapter, verse.verse)}
+                    onClick={() => handleVerseClick(item.verse.book, item.verse.chapter, item.verse.verse)}
                   />
                 ))}
 

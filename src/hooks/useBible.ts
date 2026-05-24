@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BibleChapter } from '@/types/bible';
 import { fetchChapter } from '@/lib/api/bibleApi';
+import { getAdjacentChapter } from '@/lib/constants/books';
 
 interface UseBibleResult {
   data: BibleChapter | null;
@@ -54,9 +55,27 @@ export function useBible(
 
   useEffect(() => {
     const controller = new AbortController();
-    load(controller.signal);
+    // Swallow any rejection that escapes load() — Strict Mode mounts twice in
+    // dev, and the cleanup-time abort() races the in-flight fetch.
+    load(controller.signal).catch(() => {});
     return () => controller.abort();
   }, [load]);
+
+  // Prefetch the next chapter once the current one is loaded so swipe /
+  // "next" navigation feels instant. Fire-and-forget; cache layer dedupes.
+  useEffect(() => {
+    if (!data || !versionId || !bookId || !chapter) return;
+    const next = getAdjacentChapter(bookId, chapter, 'next');
+    if (!next) return;
+
+    const controller = new AbortController();
+    fetchChapter(versionId, next.bookId, next.chapter, controller.signal).catch(
+      () => {
+        // Best-effort prefetch — failures are silent.
+      }
+    );
+    return () => controller.abort();
+  }, [data, versionId, bookId, chapter]);
 
   const refetch = useCallback(() => {
     load();

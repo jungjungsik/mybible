@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { NoteCard } from '@/components/notes/NoteCard';
@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useSermonNotes, useAllVerseNotes } from '@/hooks/useNotes';
 import { useAllBookmarks } from '@/hooks/useBookmarks';
 import { removeBookmark } from '@/lib/db/bookmarks';
-import { Plus, BookOpen, FileText, BookmarkIcon } from 'lucide-react';
+import { Plus, BookOpen, FileText, BookmarkIcon, Tag, X } from 'lucide-react';
 import clsx from 'clsx';
 
 type Tab = 'sermon' | 'verse' | 'bookmark';
@@ -24,10 +24,29 @@ export default function NotesPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('sermon');
   const [deleteBookmarkId, setDeleteBookmarkId] = useState<string | null>(null);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
 
   const sermonNotes = useSermonNotes();
   const verseNotes = useAllVerseNotes();
   const bookmarks = useAllBookmarks();
+
+  // Collect all unique tags from sermon notes (sorted, with counts)
+  const tagSummary = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const note of sermonNotes) {
+      for (const tag of note.tags ?? []) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag, count]) => ({ tag, count }));
+  }, [sermonNotes]);
+
+  const filteredSermonNotes = useMemo(() => {
+    if (!activeTag) return sermonNotes;
+    return sermonNotes.filter((n) => n.tags?.includes(activeTag));
+  }, [sermonNotes, activeTag]);
   const handleSermonNoteClick = (noteId: string) => {
     router.push(`/notes/sermon/${noteId}`);
   };
@@ -79,14 +98,46 @@ export default function NotesPage() {
         {/* Sermon Notes Tab */}
         {activeTab === 'sermon' && (
           <div className="flex flex-col gap-3">
-            {sermonNotes.length === 0 ? (
+            {/* Tag filter */}
+            {tagSummary.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <Tag size={12} className="text-bible-text-secondary dark:text-bible-text-secondary-dark" />
+                {activeTag && (
+                  <button
+                    onClick={() => setActiveTag(null)}
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-sans rounded-full bg-bible-accent text-white"
+                  >
+                    {activeTag} <X size={11} />
+                  </button>
+                )}
+                {!activeTag &&
+                  tagSummary.slice(0, 12).map(({ tag, count }) => (
+                    <button
+                      key={tag}
+                      onClick={() => setActiveTag(tag)}
+                      className="px-2.5 py-1 text-xs font-sans rounded-full bg-bible-surface dark:bg-bible-surface-dark text-bible-text-secondary dark:text-bible-text-secondary-dark border border-bible-border/40 dark:border-bible-border-dark/40 hover:border-bible-accent/40"
+                    >
+                      {tag}
+                      <span className="ml-1 text-bible-text-secondary/50">{count}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            {filteredSermonNotes.length === 0 ? (
               <div className="text-center py-16 text-gray-500 dark:text-gray-400">
                 <BookOpen size={48} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                <p>설교 노트가 없습니다</p>
-                <p className="text-xs mt-1">아래 버튼을 눌러 새 설교 노트를 작성하세요</p>
+                <p>
+                  {activeTag
+                    ? `"${activeTag}" 태그를 가진 노트가 없습니다`
+                    : '설교 노트가 없습니다'}
+                </p>
+                {!activeTag && (
+                  <p className="text-xs mt-1">아래 버튼을 눌러 새 설교 노트를 작성하세요</p>
+                )}
               </div>
             ) : (
-              sermonNotes.map((note) => (
+              filteredSermonNotes.map((note) => (
                 <NoteCard
                   key={note.id}
                   note={note}

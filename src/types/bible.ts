@@ -128,3 +128,35 @@ export interface ParsedReference {
   chapter: number;
   verse?: number;
 }
+
+// Search result item with optional surrounding verses for context
+export interface SearchResultItem {
+  verse: BibleVerse;
+  contextBefore?: BibleVerse;
+  contextAfter?: BibleVerse;
+}
+
+// ── Reading plans ──
+export interface ReadingPlanRef {
+  bookId: string;
+  chapter: number;
+}
+
+export interface ReadingPlanDay {
+  day: number;                  // 1-indexed
+  readings: ReadingPlanRef[];
+}
+
+export interface ReadingPlan {
+  id: string;                   // 'one-year' | '30-day-nt' | ...
+  name: string;                 // 사용자 표시명
+  description: string;
+  totalDays: number;
+  days: ReadingPlanDay[];
+}
+
+// Active plan state stored in settings table
+export interface ActivePlanState {
+  planId: string;
+  startDate: string;            // 'YYYY-MM-DD'
+}

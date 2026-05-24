@@ -18,7 +18,28 @@
       "mcp__plugin_oh-my-claudecode_omc-tools__lsp_diagnostics_directory",
       "Bash(timeout 15 npm run dev)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(node -e:*)",
+      "Bash(node:*)",
+      "Bash(del \"C:\\\\Users\\\\JungsikJung\\\\my-bible\\\\test-parse.mjs\")",
+      "Bash(echo:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: My Bible PWA app\n\nFull-featured Korean/English Bible reading PWA built with Next.js 14, TypeScript, Tailwind CSS, and Dexie.js \\(IndexedDB\\).\n\nFeatures:\n- 7 Bible versions \\(KRV, KJV, BSB, WEB, ASV, LSV, FBV\\)\n- Bible reading with verse highlights, bookmarks, and notes\n- TTS voice reading with play/pause/stop controls\n- Sermon note editor with rich text\n- Full-text search across all books\n- Version comparison view\n- Reading progress tracking\n- Data export/import/reset\n- PWA install support\n- Sacred Manuscript UI theme with dark mode\n- Developer: Jungsik Jung\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(npx vercel:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix ESLint no-explicit-any error in usePWAInstall\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "WebFetch(domain:ilove-bible.vercel.app)",
+      "mcp__plugin_oh-my-claudecode_omc-tools__python_repl",
+      "Bash(for book in GEN EXO LEV NUM DEU)",
+      "Bash(do start_time=$SECONDS)",
+      "Bash(done)",
+      "Bash(for book in genesis exodus leviticus numbers deuteronomy)",
+      "Bash(do curl -s -o /dev/null -w \"$book/1: %{http_code} \\(%{time_total}s, %{size_download} bytes\\)\\\\n\" \"https://raw.githubusercontent.com/wldeh/bible-api/refs/heads/main/bibles/en-kjv/books/$book/chapters/1.json\")",
+      "Bash(pnpm dlx:*)",
+      "Bash(npx @magicuidesign/cli@latest install:*)"
     ]
   }
 }
